@@ -298,6 +298,8 @@ void saveIni()
 void loadIni()
 {
 	App.ini_file = std::string(helpers::getCurrentDir() + App.ini_file);
+	// GetPrivateProfileInt looks for a file without a folder in the Windows folder, not in the game's
+	App.d2expres_ini_file = std::string(helpers::getCurrentDir() + App.d2expres_ini_file);
 	App.desktop_resolution = {
 		GetSystemMetrics(SM_XVIRTUALSCREEN),
 		GetSystemMetrics(SM_YVIRTUALSCREEN),

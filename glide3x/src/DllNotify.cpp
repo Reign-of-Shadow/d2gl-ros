@@ -22,8 +22,12 @@ VOID CALLBACK DllNotify::LdrDllNotification(
 			void* D2ExpresBase = NotificationData->Loaded.DllBase;
 
 			// need to bypass patch that makes d2expres for Sven's glide3x.dll, to prevent crash
+			// (the je that skips it is at +0x20D0 in MedianXL's build, at +0x20D2 in Reign of Shadow's)
 			uint8_t d2expres_new_code[] = { 0xEB, 0x34 };
-			Patch::setBytes((uintptr_t)D2ExpresBase + 0x20D0, sizeof d2expres_new_code, d2expres_new_code);
+			uintptr_t d2expres_skip = (uintptr_t)D2ExpresBase + 0x20D0;
+			if (*(uint8_t*)d2expres_skip != 0x74 && *(uint8_t*)(d2expres_skip + 2) == 0x74 && *(uint8_t*)(d2expres_skip + 3) == 0x34)
+				d2expres_skip += 2;
+			Patch::setBytes(d2expres_skip, sizeof d2expres_new_code, d2expres_new_code);
 
 			// this mod uses d2expres
 			App.is_d2expres = true;

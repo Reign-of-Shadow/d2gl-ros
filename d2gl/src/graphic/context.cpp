@@ -227,6 +227,13 @@ Context::Context()
 		game_ubo_ci.variables = { { "palette", 256 * sizeof(glm::vec4) }, { "gamma", 256 * sizeof(glm::vec4) } };
 		m_game_color_ubo = Context::createUniformBuffer(game_ubo_ci);
 
+		// linear gamma until the game loads a table: with contrast 0 the game only calls guGammaCorrectionRGB(1, 1, 1),
+		// which is ignored, and an empty table draws every color black
+		glm::vec4 linear_gamma[256];
+		for (int32_t i = 0; i < 256; i++)
+			linear_gamma[i] = glm::vec4(i / 255.0f);
+		m_game_color_ubo->updateData("gamma", &linear_gamma[0]);
+
 		PipelineCreateInfo game_pipeline_ci = { "glide" };
 		game_pipeline_ci.version = { 3, 3 };
 		game_pipeline_ci.shader = g_shader_glide;
