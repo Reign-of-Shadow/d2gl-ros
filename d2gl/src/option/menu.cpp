@@ -367,7 +367,7 @@ void Menu::draw()
 					modules::HDText::Instance().updateFontSize();
 			ImGui::EndDisabled();
 			drawSeparator();
-			ImGui::BeginDisabled(!ISGLIDE3X() || !App.mini_map.available);
+			ImGui::BeginDisabled(!ISGLIDE3X() || !App.mini_map.available || App.is_d2expres);
 				drawCheckbox_m("Mini Map", App.mini_map.active, "Always on minimap widget.", mini_map)
 				{
 					d2::patch_minimap->toggle(App.mini_map.active);
@@ -415,8 +415,11 @@ void Menu::draw()
 			drawCheckbox_m("No Pickup", App.no_pickup, "Auto /nopickup option on launch (exclude 1.09d).", no_pickup)
 				saveBool("Feature", "no_pickup", App.no_pickup);
 			drawSeparator();
+			// Reign of Shadow (1.10 with D2ExpRes): the client has no resistances of monsters, they show as 0%
+			ImGui::BeginDisabled(App.is_d2expres);
 			drawCheckbox_m("Show Monster Resistances", App.show_monster_res, "Show monster resistances on hp bar.", show_monster_res)
 				saveBool("Feature", "show_monster_res", App.show_monster_res);
+			ImGui::EndDisabled();
 			drawSeparator();
 			drawCheckbox_m("Show Item Quantity", App.show_item_quantity, "Show item quantity on bottom left corner of icon.", show_item_quantity)
 				saveBool("Feature", "show_item_quantity", App.show_item_quantity);

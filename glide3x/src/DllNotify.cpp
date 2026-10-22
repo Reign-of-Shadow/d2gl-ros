@@ -31,6 +31,7 @@ VOID CALLBACK DllNotify::LdrDllNotification(
 
 			// this mod uses d2expres
 			App.is_d2expres = true;
+			App.mini_map.active = false;
 		}
 	}
 }

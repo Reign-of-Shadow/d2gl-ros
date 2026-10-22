@@ -902,7 +902,7 @@ void HDText::drawMonsterHealthBar(d2::UnitAny* unit)
 	font->drawText(name, text_pos, g_text_colors.at(text_color));
 	m_hovered_unit.color = 0;
 
-	if (App.show_monster_res) {
+	if (App.show_monster_res && !App.is_d2expres) {
 		const auto s1 = d2::getUnitStat(unit, STAT_DMGREDUCTIONPCT);
 		const wchar_t* i1 = s1 >= 100 ? L"⛦" : L"";
 		const auto s2 = d2::getUnitStat(unit, STAT_MAGICDMGREDUCTIONPCT);
