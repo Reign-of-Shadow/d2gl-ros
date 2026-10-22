@@ -3,6 +3,30 @@
 
 D2GL is a Diablo 2 LoD Glide/DDraw to OpenGL wrapper that translates glide/ddraw calls to OpenGL calls. This makes D2 run better on modern hardware/OS and easier to switch between fullscreen and windowed modes, and resolves certain window and cursor-related issues. Additionally, it includes several libretro shaders for upscaling to higher resolutions, and allows for in-game text to be displayed in high-definition, D2DX's motion prediction, other QOL features.
 
+## Reign of Shadow
+
+This fork (branch `ros`, based on [rnd2k/d2gl](https://github.com/rnd2k/d2gl) v1.3.1 for D2SE) runs D2GL with the
+Diablo II 1.10f mod Reign of Shadow (D2SE, D2Mod, D2ExpRes 1024x768). Changes to v1.3.1:
+
+- **Gamma:** linear until the game loads a table. With contrast 0 the game only calls `guGammaCorrectionRGB(1, 1, 1)`,
+  which the D2SE build ignores, and every color of the game was black.
+- **D2ExpRes.ini** is read from the game folder (it was looked up in the Windows folder, so the high resolution was
+  always 1280x768 and the picture off center).
+- **D2ExpRes skip:** the `jmp` that skips D2ExpRes's patches for Sven's glide3x goes to +0x20D2 in Reign of Shadow's
+  build of D2ExpRes.dll (+0x20D0 in MedianXL's); without it the game crashes on start.
+- **Minimap and monster resistances** are off with D2ExpRes: the minimap draws the automap over the whole screen, and the
+  resistances show as 0%.
+
+Build `glide3x` as `Release|Win32` with Visual Studio 2022 and the toolset **MSVC 14.36** (component
+"MSVC v143 - VS 2022 C++ x64/x86 build tools (v14.36-17.6)"): `d2gl/vendor/lib/Release/glslang.lib` was built with
+it and links only with the same compiler.
+
+```
+MSBuild glide3x\glide3x.vcxproj /p:Configuration=Release /p:Platform=Win32 /p:VCToolsVersion=14.36.32532
+```
+
+The DLL is `glide3x\bin\Release\glide3x.dll`; it goes into the mod folder with `d2gl.mpq` of the v1.3.1 d2se release.
+
 ### 🚩 Bug/Crash Report (***Important!***)
 
 Please don't just say it crashes. I can't do anything without additional information!  
