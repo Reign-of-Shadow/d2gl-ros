@@ -763,6 +763,7 @@ void Context::presentFrame()
 	setVertexFlagW(0);
 	m_command_buffer[m_frame_index].pushCommand(CommandType::Submit);
 
+	d2::hookForeignFramedText();
 	modules::HDText::Instance().update();
 
 	if (m_vertices_mod.count) {

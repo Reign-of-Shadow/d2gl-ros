@@ -142,6 +142,7 @@ extern takeScreenShot_t takeScreenShot;
 extern drawNormalText_t drawNormalText;
 extern drawNormalTextEx_t drawNormalTextEx;
 extern drawFramedText_t drawFramedText;
+extern drawFramedText_t drawFramedTextForeign;
 extern drawRectangledText_t drawRectangledText;
 extern getNormalTextWidth_t getNormalTextWidth;
 extern getNormalTextNWidth_t getNormalTextNWidth;
@@ -169,6 +170,7 @@ extern std::unique_ptr<Patch> patch_motion_prediction;
 extern std::unique_ptr<Patch> patch_hd_text;
 
 void initHooks();
+void hookForeignFramedText();
 void destroyHooks();
 
 }

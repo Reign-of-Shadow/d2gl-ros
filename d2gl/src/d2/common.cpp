@@ -101,6 +101,7 @@ takeScreenShot_t takeScreenShot = (takeScreenShot_t)getProc((DLL_D2WIN), (-10168
 drawNormalText_t drawNormalText = (drawNormalText_t)getProc((DLL_D2WIN), (-10117), (-10117), (-10020), (-10064), (-10001), (-10150), (-10076), (0x102320));
 drawNormalTextEx_t drawNormalTextEx = (drawNormalTextEx_t)getProc((DLL_D2WIN), (-10118), (-10118), (-10006), (-10043), (-10157), (-10096), (-10084), (0x102360));
 drawFramedText_t drawFramedText = (drawFramedText_t)getProc((DLL_D2WIN), (-10129), (-10129), (-10118), (-10039), (-10031), (-10085), (-10137), (0x102280));
+drawFramedText_t drawFramedTextForeign = nullptr;
 drawRectangledText_t drawRectangledText = (drawRectangledText_t)getProc((DLL_D2WIN), (-10132), (-10132), (-10009), (-10103), (-10082), (-10013), (-10078), (0x1023B0));
 getNormalTextWidth_t getNormalTextWidth = (getNormalTextWidth_t)getProc((DLL_D2WIN), (-10121), (-10121), (-10034), (-10128), (-10132), (-10028), (-10150), (0x101820));
 getNormalTextNWidth_t getNormalTextNWidth = (getNormalTextNWidth_t)getProc((DLL_D2WIN), (-10122), (-10122), (-10015), (-10111), (-10041), (-10055), (-10148), (0x1017D0));
@@ -132,9 +133,13 @@ std::unique_ptr<Patch> patch_minimap;
 std::unique_ptr<Patch> patch_motion_prediction;
 std::unique_ptr<Patch> patch_hd_text;
 
+static uintptr_t framed_text_entry = 0;
+static bool framed_text_foreign_checked = false;
+
 void initHooks()
 {
 	*is_in_game = 0;
+	framed_text_entry = (uintptr_t)drawFramedText;
 
 	Patch no_intro = Patch();
 	no_intro.add(PatchType::Swap, getOffset((DLL_D2LAUNCH), (0x24F0C), (0x27A58), (0x1E210), (0x1E11C), (0x1E240), (0x1E0FC), (0x1E2F4), (0x2D4C84)), 1, 0x00);
@@ -259,6 +264,34 @@ void initHooks()
 	DetourTransactionCommit();
 }
 
+// A mod that loads after the hooks (Reign of Shadow's RoS.dll) can put a jump to its own framed text function over the
+// start of drawFramedText, and also calls that function directly (its item descriptions): hook that function too.
+void hookForeignFramedText()
+{
+	if (framed_text_foreign_checked || !framed_text_entry)
+		return;
+
+	const uint8_t* code = (const uint8_t*)framed_text_entry;
+	if (code[0] != 0xE9)
+		return;
+
+	const uintptr_t target = framed_text_entry + 5 + *(const int32_t*)(code + 1);
+	HMODULE target_module = NULL, own_module = NULL;
+	GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)target, &target_module);
+	GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)&hookForeignFramedText, &own_module);
+	if (!target_module || target_module == own_module)
+		return;
+
+	framed_text_foreign_checked = true;
+	drawFramedTextForeign = (drawFramedText_t)target;
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)drawFramedTextForeign, drawFramedTextForeignHooked);
+	if (DetourTransactionCommit() != NO_ERROR)
+		drawFramedTextForeign = nullptr;
+	trace_log("Framed text: hooked the function of another module at %p.", (void*)target);
+}
+
 void destroyHooks()
 {
 	DetourTransactionBegin();
@@ -287,6 +320,8 @@ void destroyHooks()
 	DetourDetach(&(PVOID&)getFramedTextSize, getFramedTextSizeHooked);
 	DetourDetach(&(PVOID&)getFontHeight, getFontHeightHooked);
 	DetourDetach(&(PVOID&)setTextSize, setTextSizeHooked);
+	if (drawFramedTextForeign)
+		DetourDetach(&(PVOID&)drawFramedTextForeign, drawFramedTextForeignHooked);
 	DetourTransactionCommit();
 }
 

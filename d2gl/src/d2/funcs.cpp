@@ -358,6 +358,13 @@ void __fastcall drawFramedTextHooked(const wchar_t* str, int x, int y, uint32_t 
 		drawFramedText(str, pos.x, pos.y, color, centered);
 }
 
+void __fastcall drawFramedTextForeignHooked(const wchar_t* str, int x, int y, uint32_t color, uint32_t centered)
+{
+	const auto pos = modules::MotionPrediction::Instance().drawText(str, x, y, D2DrawFn::FramedText);
+	if (!modules::HDText::Instance().drawFramedText(str, pos.x, pos.y, color, centered))
+		drawFramedTextForeign(str, pos.x, pos.y, color, centered);
+}
+
 void __fastcall drawRectangledTextHooked(const wchar_t* str, int x, int y, uint32_t rect_color, uint32_t rect_transparency, uint32_t color)
 {
 	const auto pos = modules::MotionPrediction::Instance().drawText(str, x, y, D2DrawFn::RectangledText);

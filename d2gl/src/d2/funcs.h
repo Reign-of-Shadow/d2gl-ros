@@ -76,6 +76,7 @@ void __fastcall takeScreenShotHooked();
 void __fastcall drawNormalTextHooked(const wchar_t* str, int x, int y, uint32_t color, uint32_t centered);
 void __fastcall drawNormalTextExHooked(const wchar_t* str, int x, int y, uint32_t color, uint32_t centered, uint32_t trans_lvl);
 void __fastcall drawFramedTextHooked(const wchar_t* str, int x, int y, uint32_t color, uint32_t centered);
+void __fastcall drawFramedTextForeignHooked(const wchar_t* str, int x, int y, uint32_t color, uint32_t centered);
 void __fastcall drawRectangledTextHooked(const wchar_t* str, int x, int y, uint32_t rect_color, uint32_t rect_transparency, uint32_t color);
 uint32_t __fastcall getNormalTextWidthHooked(const wchar_t* str);
 uint32_t __fastcall getNormalTextNWidthHooked(const wchar_t* str, const int n_chars);
