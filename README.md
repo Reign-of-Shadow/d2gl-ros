@@ -14,6 +14,8 @@ Diablo II 1.10f mod Reign of Shadow (D2SE, D2Mod, D2ExpRes 1024x768). Changes to
   always 1280x768 and the picture off center).
 - **D2ExpRes skip:** the `jmp` that skips D2ExpRes's patches for Sven's glide3x goes to +0x20D2 in Reign of Shadow's
   build of D2ExpRes.dll (+0x20D0 in MedianXL's); without it the game crashes on start.
+- **HD text, tooltips:** Reign of Shadow's RoS.dll puts a jump to its own framed text function over D2Win #10129 after
+  D2GL hooked it, and its item descriptions call that function directly; D2GL now hooks that function as well.
 - **Minimap and monster resistances** are off with D2ExpRes: the minimap draws the automap over the whole screen, and the
   resistances show as 0%.
 
