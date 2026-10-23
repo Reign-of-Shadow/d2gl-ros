@@ -5,11 +5,11 @@ D2GL is a Diablo 2 LoD Glide/DDraw to OpenGL wrapper that translates glide/ddraw
 
 ## Reign of Shadow
 
-This fork (branch `ros`) runs D2GL with the Diablo II 1.10f mod Reign of Shadow (D2SE, D2Mod, D2ExpRes 1024x768). It is
-[bayaraa/d2gl](https://github.com/bayaraa/d2gl) v1.3.3 with the D2SE and D2ExpRes commits of
-[rnd2k/d2gl](https://github.com/rnd2k/d2gl) (D2GL.v1.3.1.d2se, without its 1.09b support and its monster name fix, which
-v1.3.3 has itself) and these changes; the state on rnd2k's fork is branch `ros-rnd2k`. Later versions of the original
-come in with `git rebase bayaraa/master` (remote `bayaraa`).
+This fork of [bayaraa/d2gl](https://github.com/bayaraa/d2gl) (branch `ros`) runs D2GL with the Diablo II 1.10f mod
+Reign of Shadow (D2SE, D2Mod, D2ExpRes 1024x768). It is v1.3.3 with the D2SE and D2ExpRes support by
+[rnd2k](https://github.com/rnd2k/d2gl) (D2GL.v1.3.1.d2se; its commits without the 1.09b support and the monster name
+fix, which v1.3.3 has itself) and the changes below. Later versions of the original come in with a rebase onto its
+`master`.
 
 - **Gamma:** linear until the game loads a table. With contrast 0 the game only calls `guGammaCorrectionRGB(1, 1, 1)`,
   which the D2SE build ignores, and every color of the game was black.
