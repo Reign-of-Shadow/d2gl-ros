@@ -370,7 +370,12 @@ bool HDText::drawFramedText(const wchar_t* str, int x, int y, uint32_t color, ui
 				case d2::ItemQuality::Magic: border_color = 0x1D1D31DD; break;
 			}
 
-			pos.y = mid_y > cursor_y ? (float)(y - m_last_text_height) + 3.0f : (float)y - box_size.y;
+			// Reign of Shadow places the description itself (above the item, or centered on y when it does not fit there):
+			// the box ends at y, as D2Win draws it
+			if (App.is_d2expres)
+				pos.y = (float)y - box_size.y;
+			else
+				pos.y = mid_y > cursor_y ? (float)(y - m_last_text_height) + 3.0f : (float)y - box_size.y;
 			m_object_bg->setColor(border_color, 2);
 		} else {
 			// TODO: center skill hover text
@@ -522,7 +527,9 @@ bool HDText::drawSolidRect(int left, int top, int right, int bottom, uint32_t co
 	if (draw_mode == 5 && width == 32 && height == 32) // Reign of Shadow buff icon bg (opaque: drawn above, it covers the icon)
 		return false;
 
-	if (draw_mode == 2) // 75% backgrounds (Reign of Shadow's tooltips, buff hovers): as without HD text
+	// 75% backgrounds (Reign of Shadow's tooltips, buff hovers): as without HD text; but not the popups of the character
+	// screen (chance to hit), HD texts of the screen are under them
+	if (draw_mode == 2 && !(d2::is_ui_window(d2::UI_WINDOW_CHARACTER) && top < (int)App.game.size.y - 150))
 		return false;
 
 	if (*d2::esc_menu_open && height == 30) // In-game option sliders

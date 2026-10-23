@@ -25,7 +25,8 @@ fix, which v1.3.3 has itself) and the changes below. Later versions of the origi
   times, the buffer for HD objects ran over: flicker), and nothing is written past that buffer. RoS.dll also points the
   call after the automap to its own function: D2GL hooks it again, so the HUD stage starts (panel texts were taken for
   map texts and hidden) and the level entry text is not drawn twice. Map texts under a panel are hidden at any size.
-  Black backgrounds the game draws itself: large ones (a window), the 32x32 under buff icons, and the 75% ones.
+  Black backgrounds the game draws itself: large ones (a window), the 32x32 under buff icons, and the 75% ones (not the
+  popups of the character screen). Item descriptions end at the y RoS gives, as D2Win draws them.
   REVEAL MAP (maphack.dc6) in the escape menu.
 - **Minimap and monster resistances** are off with D2ExpRes: the minimap draws the automap over the whole screen, and the
   resistances show as 0%.
