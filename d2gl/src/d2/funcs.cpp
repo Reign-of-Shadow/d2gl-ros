@@ -360,6 +360,12 @@ void __fastcall drawFramedTextHooked(const wchar_t* str, int x, int y, uint32_t 
 
 void __fastcall drawFramedTextForeignHooked(const wchar_t* str, int x, int y, uint32_t color, uint32_t centered)
 {
+	// an empty text only clears the mod's buffer (Reign of Shadow calls it so when nothing is hovered): no box for it
+	if (!str || str[wcsspn(str, L" \n")] == L'\0') {
+		drawFramedTextForeign(str, x, y, color, centered);
+		return;
+	}
+
 	const auto pos = modules::MotionPrediction::Instance().drawText(str, x, y, D2DrawFn::FramedText);
 	if (!modules::HDText::Instance().drawFramedText(str, pos.x, pos.y, color, centered))
 		drawFramedTextForeign(str, pos.x, pos.y, color, centered);

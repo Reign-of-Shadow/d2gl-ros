@@ -135,6 +135,7 @@ std::unique_ptr<Patch> patch_hd_text;
 
 static uintptr_t framed_text_entry = 0;
 static bool framed_text_foreign_checked = false;
+bool level_entry_text_foreign = false;
 
 void initHooks()
 {
@@ -290,6 +291,33 @@ void hookForeignFramedText()
 	if (DetourTransactionCommit() != NO_ERROR)
 		drawFramedTextForeign = nullptr;
 	trace_log("Framed text: hooked the function of another module at %p.", (void*)target);
+}
+
+// The same for the call after the automap, where the HUD stage starts: Reign of Shadow's RoS.dll points it to its own
+// function (the level entry text). Without the hook the stage stays Map, and texts of the panels count as map texts.
+void hookForeignAutomapEnd()
+{
+	static bool checked = false;
+	static const uintptr_t call = getProc((DLL_D2CLIENT), (0x867A0), (0x81D6E), (0xA36B1), (0x66AB1), (0x90211), (0xC3AA1), (0x1D4A1), (0x56FAA));
+	if (checked || !call || *(const uint8_t*)call != 0xE8)
+		return;
+
+	const uintptr_t target = call + 5 + *(const int32_t*)(call + 1);
+	if (target == (uintptr_t)automapDrawEndStub)
+		return;
+
+	HMODULE target_module = NULL, own_module = NULL;
+	GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)target, &target_module);
+	GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)&hookForeignAutomapEnd, &own_module);
+	if (!target_module || target_module == own_module)
+		return;
+
+	checked = true;
+	level_entry_text_foreign = true; // the function there draws the level entry text itself
+	d2ClientFn2_O = target;
+	int32_t rel = (int32_t)((uintptr_t)automapDrawEndStub - call - 5);
+	Patch::setBytes(call + 1, sizeof(rel), (uint8_t*)&rel);
+	trace_log("Automap end: hooked again, calling the function of another module at %p.", (void*)target);
 }
 
 void destroyHooks()

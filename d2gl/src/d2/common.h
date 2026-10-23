@@ -171,6 +171,8 @@ extern std::unique_ptr<Patch> patch_hd_text;
 
 void initHooks();
 void hookForeignFramedText();
+void hookForeignAutomapEnd();
+extern bool level_entry_text_foreign;
 void destroyHooks();
 
 }

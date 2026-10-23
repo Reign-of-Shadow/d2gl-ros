@@ -62,6 +62,9 @@ class HDText {
 
 	HoveredUnit m_hovered_unit;
 
+	// texts drawn in this frame: mods draw some of them many times a frame (Reign of Shadow's character screen)
+	std::unordered_map<uint64_t, bool> m_drawn_texts;
+
 	const uint32_t m_bg_color = 0x000000CC;
 	const uint32_t m_border_color = 0x222222DD;
 	const uint32_t m_alt_bg_color = 0x00000099;

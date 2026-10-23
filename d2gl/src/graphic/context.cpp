@@ -764,6 +764,7 @@ void Context::presentFrame()
 	m_command_buffer[m_frame_index].pushCommand(CommandType::Submit);
 
 	d2::hookForeignFramedText();
+	d2::hookForeignAutomapEnd();
 	modules::HDText::Instance().update();
 
 	if (m_vertices_mod.count) {
@@ -857,6 +858,10 @@ void Context::drawQuad(int8_t flag_x, int8_t flag_y, int16_t tex_id)
 void Context::pushObject(const std::unique_ptr<Object>& object)
 {
 	const auto vertices = object->getVertices();
+
+	// the delayed objects go into the same buffer later: beyond its end they would be written over the next frame's
+	if (m_vertices_mod.count + m_vertices_late.count + 4 > MAX_VERTICES_MOD)
+		return;
 
 	if (m_delay_push) {
 		memcpy(m_vertices_late.ptr, vertices, sizeof(VertexMod) * 4);

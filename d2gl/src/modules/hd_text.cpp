@@ -134,6 +134,7 @@ void HDText::reset()
 	m_masking = false;
 	m_map_text_line = 1;
 	m_is_player_dead = d2::isUnitDead(d2::getPlayerUnit());
+	m_drawn_texts.clear();
 }
 
 void HDText::update()
@@ -160,6 +161,17 @@ bool HDText::drawText(const wchar_t* str, int x, int y, uint32_t color, uint32_t
 {
 	if (!isActive() || !str)
 		return false;
+
+	if (App.game.screen == GameScreen::InGame) {
+		// off screen, or the same text at the same place again in this frame: nothing to draw
+		if (x >= (int)App.game.size.x || y >= (int)App.game.size.y + 50)
+			return true;
+
+		const int params[5] = { x, y, (int)m_text_size, (int)color, (int)centered };
+		const uint64_t key = (uint64_t)helpers::hash(str, wcslen(str) * sizeof(wchar_t)) << 32 | helpers::hash(params, sizeof(params));
+		if (!m_drawn_texts.insert({ key, true }).second)
+			return true;
+	}
 
 	auto font = getFont(m_text_size);
 	font->setShadow(1);
@@ -205,8 +217,11 @@ bool HDText::drawText(const wchar_t* str, int x, int y, uint32_t color, uint32_t
 	if (!ISGLIDE3X())
 		pos.y += font->getFontSize() * 0.08f;
 
-	if (App.game.draw_stage == DrawStage::Map && m_text_size == 6 && *d2::screen_shift != SCREENPANEL_NONE) {
+	// map texts under a panel: names (size 6), also the level name and version at the top right (Reign of Shadow, 1024x768)
+	if (App.game.draw_stage == DrawStage::Map && *d2::screen_shift != SCREENPANEL_NONE) {
 		const auto center = (int)(*d2::screen_width / 2);
+		if (*d2::screen_shift == SCREENPANEL_BOTH)
+			return true;
 		if (*d2::screen_shift == SCREENPANEL_LEFT && x < center)
 			return true;
 		if (*d2::screen_shift == SCREENPANEL_RIGHT) {
@@ -495,6 +510,9 @@ bool HDText::drawSolidRect(int left, int top, int right, int bottom, uint32_t co
 	if (width == App.game.size.x || height == App.game.size.y) // FreeRes black bars
 		return false;
 
+	if (width > 400 && height > 200) // a window background of a mod (Reign of Shadow's loot filter): drawn above, it covers the window
+		return false;
+
 	if ((*d2::screen_shift == SCREENPANEL_LEFT || *d2::screen_shift == SCREENPANEL_BOTH) && width == 320 && (height == 432 || height == 236)) // Plugy stats panel bg
 		return false;
 
@@ -659,7 +677,8 @@ bool HDText::drawImage(d2::CellContext* cell, int x, int y, int draw_mode)
 		}
 	} else if (App.game.draw_stage == DrawStage::UI && *d2::esc_menu_open) {
 		const auto cell_no = d2::getCellNo(cell);
-		if (cell_file->cells[0]->height != g_text_size[0].large_text.x && cell_file->cells[0]->height != g_text_size[0].large_text.y &&
+		const bool reveal_map = cell_file->numcells == 1 && cell_file->cells[0]->width == 222 && cell_file->cells[0]->height == 41; // Reign of Shadow
+		if (!reveal_map && cell_file->cells[0]->height != g_text_size[0].large_text.x && cell_file->cells[0]->height != g_text_size[0].large_text.y &&
 			cell_file->cells[0]->height != g_text_size[m_lang_id].large_text.x && cell_file->cells[0]->height != g_text_size[m_lang_id].large_text.y)
 			return true;
 
@@ -672,7 +691,7 @@ bool HDText::drawImage(d2::CellContext* cell, int x, int y, int draw_mode)
 						image_width += cell_file->cells[1]->width;
 					glm::ivec2 pos = { x, y };
 					const auto old_size = m_text_size;
-					setTextSize(cell->height == g_text_size[0].large_text.x || cell->height == g_text_size[m_lang_id].large_text.x ? 3 : 2);
+					setTextSize(reveal_map || cell->height == g_text_size[0].large_text.x || cell->height == g_text_size[m_lang_id].large_text.x ? 3 : 2);
 
 					if (p.align == TextAlign::Center) {
 						auto text_width = getNormalTextWidth(p.str, 0);
@@ -804,7 +823,7 @@ void HDText::startEntryText()
 
 void HDText::drawEntryText()
 {
-	if (App.game.screen != GameScreen::InGame || !m_entry_text_draw)
+	if (App.game.screen != GameScreen::InGame || !m_entry_text_draw || d2::level_entry_text_foreign)
 		return;
 
 	if (m_entry_timer < std::clock())
