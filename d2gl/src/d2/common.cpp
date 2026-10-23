@@ -102,6 +102,7 @@ drawNormalText_t drawNormalText = (drawNormalText_t)getProc((DLL_D2WIN), (-10117
 drawNormalTextEx_t drawNormalTextEx = (drawNormalTextEx_t)getProc((DLL_D2WIN), (-10118), (-10118), (-10006), (-10043), (-10157), (-10096), (-10084), (0x102360));
 drawFramedText_t drawFramedText = (drawFramedText_t)getProc((DLL_D2WIN), (-10129), (-10129), (-10118), (-10039), (-10031), (-10085), (-10137), (0x102280));
 drawFramedText_t drawFramedTextForeign = nullptr;
+framedTextPosition_t framedTextPosition = nullptr;
 drawRectangledText_t drawRectangledText = (drawRectangledText_t)getProc((DLL_D2WIN), (-10132), (-10132), (-10009), (-10103), (-10082), (-10013), (-10078), (0x1023B0));
 getNormalTextWidth_t getNormalTextWidth = (getNormalTextWidth_t)getProc((DLL_D2WIN), (-10121), (-10121), (-10034), (-10128), (-10132), (-10028), (-10150), (0x101820));
 getNormalTextNWidth_t getNormalTextNWidth = (getNormalTextNWidth_t)getProc((DLL_D2WIN), (-10122), (-10122), (-10015), (-10111), (-10041), (-10055), (-10148), (0x1017D0));
@@ -285,6 +286,8 @@ void hookForeignFramedText()
 
 	framed_text_foreign_checked = true;
 	drawFramedTextForeign = (drawFramedText_t)target;
+	// the mod's position fixes for these texts, which its function does before it stores them (Reign of Shadow)
+	framedTextPosition = (framedTextPosition_t)GetProcAddress(target_module, "RoS_FramedTextPosition");
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach(&(PVOID&)drawFramedTextForeign, drawFramedTextForeignHooked);

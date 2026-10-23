@@ -18,7 +18,15 @@ fix, which v1.3.3 has itself) and the changes below. Later versions of the origi
 - **D2ExpRes skip:** the `jmp` that skips D2ExpRes's patches for Sven's glide3x goes to +0x20D2 in Reign of Shadow's
   build of D2ExpRes.dll (+0x20D0 in MedianXL's); without it the game crashes on start.
 - **HD text, tooltips:** Reign of Shadow's RoS.dll puts a jump to its own framed text function over D2Win #10129 after
-  D2GL hooked it, and its item descriptions call that function directly; D2GL now hooks that function as well.
+  D2GL hooked it, and its item descriptions call that function directly; D2GL now hooks that function as well. Drawing
+  them itself, D2GL calls the mod's `RoS_FramedTextPosition` export first (its position fixes); an empty text only clears
+  the mod's buffer.
+- **HD text, other:** the same text at the same place is drawn once a frame (RoS's character screen drew each about 16
+  times, the buffer for HD objects ran over: flicker), and nothing is written past that buffer. RoS.dll also points the
+  call after the automap to its own function: D2GL hooks it again, so the HUD stage starts (panel texts were taken for
+  map texts and hidden) and the level entry text is not drawn twice. Map texts under a panel are hidden at any size.
+  Black backgrounds the game draws itself: large ones (a window), the 32x32 under buff icons, and the 25% and 75% ones.
+  REVEAL MAP (maphack.dc6) in the escape menu.
 - **Minimap and monster resistances** are off with D2ExpRes: the minimap draws the automap over the whole screen, and the
   resistances show as 0%.
 

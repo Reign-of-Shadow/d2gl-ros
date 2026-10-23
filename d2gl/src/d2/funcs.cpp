@@ -367,7 +367,11 @@ void __fastcall drawFramedTextForeignHooked(const wchar_t* str, int x, int y, ui
 	}
 
 	const auto pos = modules::MotionPrediction::Instance().drawText(str, x, y, D2DrawFn::FramedText);
-	if (!modules::HDText::Instance().drawFramedText(str, pos.x, pos.y, color, centered))
+	// drawn here instead of by the mod's function: with the mod's position fixes (its function does them itself)
+	glm::ivec2 hd_pos = pos;
+	if (framedTextPosition)
+		framedTextPosition(str, &hd_pos.x, &hd_pos.y, centered);
+	if (!modules::HDText::Instance().drawFramedText(str, hd_pos.x, hd_pos.y, color, centered))
 		drawFramedTextForeign(str, pos.x, pos.y, color, centered);
 }
 

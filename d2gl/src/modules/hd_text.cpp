@@ -519,6 +519,12 @@ bool HDText::drawSolidRect(int left, int top, int right, int bottom, uint32_t co
 	if (draw_mode == 2 && width == 24 && height <= 24) // PD2 buff timer bg
 		return false;
 
+	if (draw_mode == 5 && width == 32 && height == 32) // Reign of Shadow buff icon bg (opaque: drawn above, it covers the icon)
+		return false;
+
+	if (draw_mode == 0 || draw_mode == 2) // 25% and 75% backgrounds (Reign of Shadow's tooltips, buff hovers): as without HD text
+		return false;
+
 	if (*d2::esc_menu_open && height == 30) // In-game option sliders
 		return false;
 
