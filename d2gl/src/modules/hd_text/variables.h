@@ -134,6 +134,7 @@ inline const std::vector<std::vector<std::string>> g_option_overwrites = {
 
 inline std::vector<D2TextInfo> g_options_texts = {
 	{ 0, { 222, 41 }, L"REVEAL MAP" }, // maphack.dc6 (Reign of Shadow)
+	{ 1, {   7, 36 }, L"MOD OPTIONS" }, // modoptions.dc6 (Reign of Shadow)
 	{ 0, { 160, 36 }, L"OPTIONS" }, // options.dc6
 	{ 1, { 178, 36 }, L"SAVE AND EXIT GAME" }, // exit.dc6
 	{ 1, { 100, 36 }, L"RETURN TO GAME" }, // returntogame.dc6
