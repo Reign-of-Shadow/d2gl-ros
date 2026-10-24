@@ -31,7 +31,7 @@ fix, which v1.3.3 has itself) and the changes below. Later versions of the origi
 - **Options the mod has itself** are gone from the menu and not read from d2gl.ini: No Pickup, Show Monster Resistances
   (they showed 0% with the 1.10 client), Show Item Quantity (it hooks the game's inventory loop, which RoS replaces;
   RoS.dll has the option now). Also gone: the button to the configuration wiki. The menu says "Reign of Shadow edition".
-- **Minimap** can be switched on again with D2ExpRes (it drew the automap over the whole screen at first; under test).
+- **Minimap** can be switched on again with D2ExpRes (it drew the automap over the whole screen at first; no problem seen since, waiting for feedback of players).
 - **Clock and FPS** with the automap texts at the top right (level name, version, difficulty ...), with and without HD
   text: the clock behind the first line, the FPS counter (Show FPS) as a line below; without the automap only the clock
   and the FPS below it. With HD text and the minimap, the minimap places these texts as before.
