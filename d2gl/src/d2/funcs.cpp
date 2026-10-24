@@ -195,6 +195,7 @@ void gameDrawBegin()
 
 void automapDrawBegin()
 {
+	modules::HDText::startMapInfo();
 	App.game.draw_stage = DrawStage::Map;
 	App.context->onStageChange();
 }
@@ -339,6 +340,7 @@ void __fastcall drawNormalTextHooked(const wchar_t* str, int x, int y, uint32_t 
 	if (ISGLIDE3X() && !App.hd_text.active && color == 15)
 		color = 5;
 
+	modules::HDText::mapInfoText(str, x, y);
 	const auto pos = modules::MotionPrediction::Instance().drawText(str, x, y, D2DrawFn::NormalText);
 	if (!modules::HDText::Instance().drawText(str, pos.x, pos.y, color, centered))
 		drawNormalText(str, pos.x, pos.y, color, centered);

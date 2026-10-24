@@ -112,6 +112,9 @@ public:
 	void startEntryText();
 	void drawEntryText();
 
+	static void startMapInfo();
+	static void mapInfoText(const wchar_t* str, int& x, int y);
+	static void drawMapInfo();
 	static void drawFpsCounter();
 	static void drawItemQuantity(bool draw, int x = 0, int y = 0);
 

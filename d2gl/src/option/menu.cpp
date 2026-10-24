@@ -180,10 +180,12 @@ void Menu::draw()
 	if (ImGui::BeginTabBar("tabs", ImGuiTabBarFlags_None)) {
 		ImGui::PopStyleVar();
 		ImGui::PopStyleColor();
-		ImGui::SetCursorPos({ 530.0f, 74.0f });
+		ImGui::SetCursorPos({ 530.0f, 56.0f });
 		ImGui::PushFont(m_fonts[14]);
 		ImGui::PushStyleColor(ImGuiCol_Text, m_colors[Color::Gray]);
 		ImGui::Text("D2GL v%s by Bayaraa.", App.version_str.c_str());
+		ImGui::SetCursorPos({ 530.0f, 74.0f });
+		ImGui::Text("Reign of Shadow edition");
 		ImGui::PopStyleColor();
 		ImGui::PopFont();	
 		// ImGui::SetTabItemClosed("Screen");
@@ -367,7 +369,7 @@ void Menu::draw()
 					modules::HDText::Instance().updateFontSize();
 			ImGui::EndDisabled();
 			drawSeparator();
-			ImGui::BeginDisabled(!ISGLIDE3X() || !App.mini_map.available || App.is_d2expres);
+			ImGui::BeginDisabled(!ISGLIDE3X() || !App.mini_map.available);
 				drawCheckbox_m("Mini Map", App.mini_map.active, "Always on minimap widget.", mini_map)
 				{
 					d2::patch_minimap->toggle(App.mini_map.active);
@@ -411,18 +413,6 @@ void Menu::draw()
 			drawSeparator();
 			drawCheckbox_m("Skip Intro", App.skip_intro, "Auto skip intro videos on launch.", skip_intro)
 				saveBool("Feature", "skip_intro", App.skip_intro);
-			drawSeparator();
-			drawCheckbox_m("No Pickup", App.no_pickup, "Auto /nopickup option on launch (exclude 1.09d).", no_pickup)
-				saveBool("Feature", "no_pickup", App.no_pickup);
-			drawSeparator();
-			// Reign of Shadow (1.10 with D2ExpRes): the client has no resistances of monsters, they show as 0%
-			ImGui::BeginDisabled(App.is_d2expres);
-			drawCheckbox_m("Show Monster Resistances", App.show_monster_res, "Show monster resistances on hp bar.", show_monster_res)
-				saveBool("Feature", "show_monster_res", App.show_monster_res);
-			ImGui::EndDisabled();
-			drawSeparator();
-			drawCheckbox_m("Show Item Quantity", App.show_item_quantity, "Show item quantity on bottom left corner of icon.", show_item_quantity)
-				saveBool("Feature", "show_item_quantity", App.show_item_quantity);
 			drawSeparator();
 			drawCheckbox_m("Show FPS", App.show_fps, "FPS Counter on bottom center.", show_fps)
 				saveBool("Feature", "show_fps", App.show_fps);
@@ -484,19 +474,6 @@ void Menu::draw()
 		ImGui::EndTabBar();
 	}
 	ImGui::PopFont();
-	if (active_tab != 3) {
-		ImGui::SetCursorPos({ 16.0f, 500.0f });
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0.0f, 0.0f });
-		ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
-		ImGui::BeginChildFrame(ImGui::GetID("#wiki"), { 300.0f, 24.0f }, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground);
-		ImGui::PopStyleVar(3);
-		ImGui::PushFont(m_fonts[15]);
-		if (ImGui::Button(" Open Configuration Wiki Page > "))
-			ShellExecute(0, 0, L"https://github.com/bayaraa/d2gl/wiki/Configuration", 0, 0, SW_SHOW);
-		ImGui::PopFont();
-		ImGui::EndChildFrame();
-	}
 	ImGui::End();
 
 	// clang-format on

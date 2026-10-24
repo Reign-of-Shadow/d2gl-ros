@@ -1009,9 +1009,87 @@ inline wchar_t HDText::getColor(uint32_t color)
 	return (color < g_default_colors.size()) ? g_default_colors[color] : g_default_colors[0];
 }
 
+// Reign of Shadow: the clock behind the first of the automap texts at the top right (level name, version, difficulty
+// ...) and the FPS counter as a line below them, with and without HD text; with HD text and the minimap, the minimap
+// places these texts and draws the clock itself
+static struct {
+	int lines = 0;
+	int right = 0;
+	int first_y = 0;
+	int last_y = 0;
+	int step = 16;
+	uint32_t text_size = 0;
+} g_map_info;
+
+static bool mapInfoByMiniMap()
+{
+	return App.hd_text.active && modules::MiniMap::Instance().isActive();
+}
+
+static void clockString(wchar_t* str, size_t len, bool colored, bool separator)
+{
+	tm local_time;
+	time_t now = time(0);
+	localtime_s(&local_time, &now);
+	swprintf_s(str, len, L"%s%s%.2d:%.2d", separator ? L" | " : L"", colored ? L"\xFF" L"c4" : L"", local_time.tm_hour, local_time.tm_min);
+}
+
+void HDText::startMapInfo()
+{
+	g_map_info.lines = 0;
+}
+
+void HDText::mapInfoText(const wchar_t* str, int& x, int y)
+{
+	if (App.game.screen != GameScreen::InGame || App.game.draw_stage != DrawStage::Map || HDText::Instance().getTextSize() == 6)
+		return;
+	if (*d2::screen_shift != SCREENPANEL_NONE || mapInfoByMiniMap())
+		return;
+
+	if (g_map_info.lines == 0) {
+		wchar_t clock[20] = { 0 };
+		clockString(clock, 20, false, true);
+		g_map_info.right = x + (int)d2::getNormalTextWidthHooked(str);
+		g_map_info.first_y = y;
+		g_map_info.text_size = HDText::Instance().getTextSize();
+		if (*d2::automap_on) // without the automap the game draws these texts too, but they are not seen
+			x -= (int)d2::getNormalTextWidthHooked(clock);
+	} else if (y > g_map_info.last_y)
+		g_map_info.step = y - g_map_info.last_y;
+
+	g_map_info.last_y = y;
+	g_map_info.lines++;
+}
+
+void HDText::drawMapInfo()
+{
+	if (App.game.screen != GameScreen::InGame || !g_map_info.lines || mapInfoByMiniMap())
+		return;
+
+	const auto old_size = HDText::Instance().getTextSize();
+	d2::setTextSizeHooked(g_map_info.text_size);
+
+	// without the automap only the clock (without " | ") and the FPS right below it
+	const bool automap = *d2::automap_on;
+	wchar_t str[20] = { 0 };
+	clockString(str, 20, false, automap);
+	const auto clock_width = (int)d2::getNormalTextWidthHooked(str);
+	clockString(str, 20, true, automap);
+	d2::drawNormalTextHooked(str, g_map_info.right - clock_width, g_map_info.first_y, 5, 0);
+
+	if (App.show_fps) {
+		swprintf_s(str, L"FPS: %.0f", (float)round(1000.0 / App.context->getAvgFrameTime()));
+		d2::drawNormalTextHooked(str, g_map_info.right - (int)d2::getNormalTextWidthHooked(str), (automap ? g_map_info.last_y : g_map_info.first_y) + g_map_info.step, 4, 0);
+	}
+
+	d2::setTextSizeHooked(old_size);
+}
+
 void HDText::drawFpsCounter()
 {
 	if (!App.show_fps || App.game.screen != GameScreen::InGame)
+		return;
+	if (g_map_info.lines && !mapInfoByMiniMap()) // at the top right, drawMapInfo
 		return;
 
 	static wchar_t str[20] = { 0 };

@@ -699,6 +699,7 @@ void Context::onStageChange()
 				modules::MiniMap::Instance().draw();
 			}
 			modules::HDText::Instance().drawEntryText();
+			modules::HDText::drawMapInfo();
 			modules::HDText::drawFpsCounter();
 			break;
 		case DrawStage::CursorItem:

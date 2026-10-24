@@ -28,8 +28,13 @@ fix, which v1.3.3 has itself) and the changes below. Later versions of the origi
   Black backgrounds the game draws itself: large ones (a window), the 32x32 under buff icons, and the 75% ones (not the
   popups of the character screen). Item descriptions end at the y RoS gives, as D2Win draws them.
   REVEAL MAP (maphack.dc6) in the escape menu.
-- **Minimap and monster resistances** are off with D2ExpRes: the minimap draws the automap over the whole screen, and the
-  resistances show as 0%.
+- **Options the mod has itself** are gone from the menu and not read from d2gl.ini: No Pickup, Show Monster Resistances
+  (they showed 0% with the 1.10 client), Show Item Quantity (it hooks the game's inventory loop, which RoS replaces;
+  RoS.dll has the option now). Also gone: the button to the configuration wiki. The menu says "Reign of Shadow edition".
+- **Minimap** can be switched on again with D2ExpRes (it drew the automap over the whole screen at first; under test).
+- **Clock and FPS** with the automap texts at the top right (level name, version, difficulty ...), with and without HD
+  text: the clock behind the first line, the FPS counter (Show FPS) as a line below; without the automap only the clock
+  and the FPS below it. With HD text and the minimap, the minimap places these texts as before.
 
 Build `glide3x` as `Release|Win32` with Visual Studio 2022 and the toolset **MSVC 14.36** (component
 "MSVC v143 - VS 2022 C++ x64/x86 build tools (v14.36-17.6)"): `d2gl/vendor/lib/Release/glslang.lib` was built with
