@@ -869,19 +869,40 @@ void HDText::drawUnitHealthBar()
 
 void HDText::drawMonsterHealthBar(d2::UnitAny* unit)
 {
-	auto name = d2::getMonsterName(unit);
-	if (!name || wcslen(name) <= 0) {
-		static wchar_t name_str[50] = { 0 };
-		wcscpy_s(name_str, d2::hovered_monster_name);
-		const auto len = wcslen(name_str);
-		if (len <= 0)
-			return;
-
-		auto end = name_str + len - 1;
-		while (end >= name_str && *end == L' ') end--;
-		*(end + 1) = '\0';
-		name = name_str;
+	// the hover text the game drew: D2Win keeps it in its framed text buffer. A mod can move that buffer (Reign of
+	// Shadow does, for longer texts), so its address is read from the code that uses it (1.10f: D2Win+0xA71B,
+	// mov ecx, buffer). Reign of Shadow puts spaces around the name of super uniques and bosses for a longer bar and adds
+	// the level and "(Corpse)": the bar takes its width from the text with the spaces, the text is drawn without them.
+	const wchar_t* game_buffer = d2::hovered_monster_name;
+	if (isVer(V_110)) {
+		if (const auto ref = helpers::getProcOffset(DLL_D2WIN, 0xA71B))
+			game_buffer = *(const wchar_t**)ref;
 	}
+	static wchar_t game_text[128] = { 0 };
+	{
+		const wchar_t* start = game_buffer ? game_buffer : L"";
+		while (*start == L' ')
+			start++;
+		wcsncpy_s(game_text, start, _TRUNCATE);
+		auto end = game_text + wcslen(game_text) - 1;
+		while (end >= game_text && *end == L' ') end--;
+		*(end + 1) = 0;
+	}
+
+	auto name = d2::getMonsterName(unit);
+	// the plain name without its color codes, to check that the buffer holds the text of this monster
+	const wchar_t* plain_name = name ? name : L"";
+	while (plain_name[0] == L'\xFF' && plain_name[1] == L'c' && plain_name[2])
+		plain_name += 3;
+
+	const wchar_t* bar_text = nullptr;
+	if (game_text[0] && (!plain_name[0] || wcsstr(game_text, plain_name))) {
+		bar_text = game_buffer;
+		name = game_text;
+	}
+
+	if (!name || wcslen(name) <= 0)
+		return;
 
 	const auto hp = d2::getUnitStat(unit, STAT_HP);
 	const auto max_hp = d2::getUnitStat(unit, STAT_MAXHP);
@@ -899,11 +920,12 @@ void HDText::drawMonsterHealthBar(d2::UnitAny* unit)
 		center = (float)(*d2::screen_width / 4 * 3);
 
 	const auto text_size = font->getTextSize(name);
+	const auto bar_text_size = bar_text ? font->getTextSize(bar_text) : text_size;
 	float hp_percent = (float)hp / (float)max_hp;
 
 	glm::vec2 bar_size = { 160.0f, 18.0f };
-	if (text_size.x + 40.0f > bar_size.x)
-		bar_size.x = text_size.x + 40.0f;
+	if (bar_text_size.x + 40.0f > bar_size.x)
+		bar_size.x = bar_text_size.x + 40.0f;
 
 	glm::vec2 bar_pos = { center - bar_size.x / 2, d2::isLangCJK(m_lang_id) ? 18.0f : 20.0f };
 
