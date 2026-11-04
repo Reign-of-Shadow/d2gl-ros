@@ -177,6 +177,23 @@ bool HDText::drawText(const wchar_t* str, int x, int y, uint32_t color, uint32_t
 	font->setShadow(1);
 
 	glm::vec2 pos = { (float)x, (float)y };
+
+	// Reign of Shadow's lines under the monster health bar (monster type, unique mods like "Extra Fast", immunities,
+	// resistances; font 6, centered, from y 41 on): a few pixels lower, clear of the bar's frame
+	if (App.game.screen == GameScreen::InGame && m_text_size == 6 && y >= 40 && y <= 100) {
+		const auto unit = d2::getSelectedUnit();
+		if (unit && unit->dwType == d2::UnitType::Monster) {
+			const float text_center = (float)x + font->getTextSize(str).x / 2.0f;
+			float center = (float)(*d2::screen_width / 2);
+			if (*d2::screen_shift == SCREENPANEL_RIGHT)
+				center = (float)(*d2::screen_width / 4);
+			else if (*d2::screen_shift == SCREENPANEL_LEFT)
+				center = (float)(*d2::screen_width / 4 * 3);
+			if (std::abs(text_center - center) < 16.0f)
+				pos.y += 5.0f;
+		}
+	}
+
 	const auto def_color = font->getColor();
 	uint32_t text_color = g_text_colors.at(!color && def_color ? def_color : getColor(color));
 
@@ -869,19 +886,40 @@ void HDText::drawUnitHealthBar()
 
 void HDText::drawMonsterHealthBar(d2::UnitAny* unit)
 {
-	auto name = d2::getMonsterName(unit);
-	if (!name || wcslen(name) <= 0) {
-		static wchar_t name_str[50] = { 0 };
-		wcscpy_s(name_str, d2::hovered_monster_name);
-		const auto len = wcslen(name_str);
-		if (len <= 0)
-			return;
-
-		auto end = name_str + len - 1;
-		while (end >= name_str && *end == L' ') end--;
-		*(end + 1) = '\0';
-		name = name_str;
+	// the hover text the game drew: D2Win keeps it in its framed text buffer. A mod can move that buffer (Reign of
+	// Shadow does, for longer texts), so its address is read from the code that uses it (1.10f: D2Win+0xA71B,
+	// mov ecx, buffer). Reign of Shadow puts spaces around the name of super uniques and bosses for a longer bar and adds
+	// the level and "(Corpse)": the bar takes its width from the text with the spaces, the text is drawn without them.
+	const wchar_t* game_buffer = d2::hovered_monster_name;
+	if (isVer(V_110)) {
+		if (const auto ref = helpers::getProcOffset(DLL_D2WIN, 0xA71B))
+			game_buffer = *(const wchar_t**)ref;
 	}
+	static wchar_t game_text[128] = { 0 };
+	{
+		const wchar_t* start = game_buffer ? game_buffer : L"";
+		while (*start == L' ')
+			start++;
+		wcsncpy_s(game_text, start, _TRUNCATE);
+		auto end = game_text + wcslen(game_text) - 1;
+		while (end >= game_text && *end == L' ') end--;
+		*(end + 1) = 0;
+	}
+
+	auto name = d2::getMonsterName(unit);
+	// the plain name without its color codes, to check that the buffer holds the text of this monster
+	const wchar_t* plain_name = name ? name : L"";
+	while (plain_name[0] == L'\xFF' && plain_name[1] == L'c' && plain_name[2])
+		plain_name += 3;
+
+	const wchar_t* bar_text = nullptr;
+	if (game_text[0] && (!plain_name[0] || wcsstr(game_text, plain_name))) {
+		bar_text = game_buffer;
+		name = game_text;
+	}
+
+	if (!name || wcslen(name) <= 0)
+		return;
 
 	const auto hp = d2::getUnitStat(unit, STAT_HP);
 	const auto max_hp = d2::getUnitStat(unit, STAT_MAXHP);
@@ -899,39 +937,103 @@ void HDText::drawMonsterHealthBar(d2::UnitAny* unit)
 		center = (float)(*d2::screen_width / 4 * 3);
 
 	const auto text_size = font->getTextSize(name);
+	const auto bar_text_size = bar_text ? font->getTextSize(bar_text) : text_size;
 	float hp_percent = (float)hp / (float)max_hp;
 
 	glm::vec2 bar_size = { 160.0f, 18.0f };
-	if (text_size.x + 40.0f > bar_size.x)
-		bar_size.x = text_size.x + 40.0f;
+	if (bar_text_size.x + 40.0f > bar_size.x)
+		bar_size.x = bar_text_size.x + 40.0f;
 
 	glm::vec2 bar_pos = { center - bar_size.x / 2, d2::isLangCJK(m_lang_id) ? 18.0f : 20.0f };
 
-	m_object_bg->setFlags(2);
-	m_object_bg->setPosition(bar_pos);
-	m_object_bg->setSize({ bar_size.x * hp_percent, bar_size.y });
-	m_object_bg->setColor(m_monster_hp, 1);
-	App.context->pushObject(m_object_bg);
+	if (hp_percent < 0.0f)
+		hp_percent = 0.0f;
+	if (hp_percent > 1.0f)
+		hp_percent = 1.0f;
 
-	if (hp_percent < 1.0f) {
-		m_object_bg->setPosition({ bar_pos.x + bar_size.x * hp_percent, bar_pos.y });
-		m_object_bg->setSize({ bar_size.x * (1.0f - hp_percent), bar_size.y });
-		m_object_bg->setColor(m_bg_color, 1);
-		App.context->pushObject(m_object_bg);
+	// damage trail: the part just lost stays for 600 ms, then runs down to the life (a full bar in about 0.8 s)
+	const auto now = GetTickCount64();
+	const uint32_t unit_id = d2::getUnitID(unit) | ((uint8_t)unit->dwType << 24);
+	if (unit_id != m_bar.unit_id) {
+		m_bar = { unit_id, hp_percent, hp_percent, now, now };
+	} else {
+		if (hp_percent < m_bar.last_hp) {
+			if (m_bar.trail < m_bar.last_hp)
+				m_bar.trail = m_bar.last_hp;
+			m_bar.hit_time = now;
+		}
+		if (now - m_bar.hit_time > 600) {
+			m_bar.trail -= (float)(now - m_bar.frame_time) / 800.0f;
+		}
+		if (m_bar.trail < hp_percent)
+			m_bar.trail = hp_percent;
 	}
+	m_bar.last_hp = hp_percent;
+	m_bar.frame_time = now;
 
-	wchar_t text_color = L'\x30';
-	if (type == d2::MonsterType::Boss || type == d2::MonsterType::SuperUnique)
-		text_color = L'\x34';
+	const auto rect = [this](glm::vec2 pos, glm::vec2 size, uint32_t color) {
+		if (size.x <= 0.0f || size.y <= 0.0f)
+			return;
+		m_object_bg->setFlags(2);
+		m_object_bg->setPosition(pos);
+		m_object_bg->setSize(size);
+		m_object_bg->setColor(color, 1);
+		App.context->pushObject(m_object_bg);
+	};
+	// a top to bottom gradient in three bands
+	const auto bands = [&rect, &bar_pos, &bar_size](float from, float to, uint32_t top, uint32_t mid, uint32_t bottom) {
+		const float x = bar_pos.x + bar_size.x * from;
+		const float w = bar_size.x * (to - from);
+		const float h = bar_size.y / 3.0f;
+		rect({ x, bar_pos.y }, { w, h }, top);
+		rect({ x, bar_pos.y + h }, { w, h }, mid);
+		rect({ x, bar_pos.y + h * 2.0f }, { w, bar_size.y - h * 2.0f }, bottom);
+	};
+
+	// frame: black outline, gold-brown border, dark grey for the life lost
+	rect({ bar_pos.x - 2.0f, bar_pos.y - 2.0f }, { bar_size.x + 4.0f, bar_size.y + 4.0f }, 0x000000FF);
+	rect({ bar_pos.x - 1.0f, bar_pos.y - 1.0f }, { bar_size.x + 2.0f, bar_size.y + 2.0f }, 0x8A7550FF);
+	rect(bar_pos, bar_size, 0x262220FF);
+	// trail (gold), life (red) with a light edge on top
+	if (m_bar.trail > hp_percent)
+		bands(hp_percent, m_bar.trail, 0xF2C25AFF, 0xD59D3BFF, 0xB9781DFF);
+	bands(0.0f, hp_percent, 0xC62A22FF, 0xA21C16FF, 0x7D0E0BFF);
+	rect(bar_pos, { bar_size.x * hp_percent, 1.0f }, 0xFFD2BE59);
+	// a line every 10 %
+	// sections: the spaces Reign of Shadow puts in front of the name tell the rank (24: act bosses and ubers, 16: super
+	// uniques, Blood Raven, Summoner, Izual, 1: the rest). Act bosses 10 sections, super uniques 5, other monsters none.
+	int leading_spaces = 0;
+	if (bar_text)
+		while (bar_text[leading_spaces] == L' ')
+			leading_spaces++;
+	const int sections = leading_spaces >= 20 ? 10 : (leading_spaces >= 10 || type == d2::MonsterType::SuperUnique ? 5 : 1);
+	for (int i = 1; i < sections; i++)
+		rect({ bar_pos.x + (float)(int)(bar_size.x * i / (float)sections), bar_pos.y }, { 1.0f, bar_size.y }, 0x0000008C);
+
+	// the name: light gold with a black outline (bosses and super uniques), else the monster's color
+	// (color codes at the start would color the outline too: the color comes from name_color)
+	uint32_t name_color = 0xFFE39AFF;
+	const wchar_t* shown_name = name;
+	while (shown_name[0] == L'\xFF' && shown_name[1] == L'c' && shown_name[2])
+		shown_name += 3;
+	// gold for every monster with a longer bar (act bosses, super uniques: the spaces of Reign of Shadow) and for the
+	// bosses and super uniques of the game; some of them have their own MonStats row and no super unique flag
+	if (leading_spaces >= 10 || type == d2::MonsterType::Boss || type == d2::MonsterType::SuperUnique)
+		;
 	else if (type == d2::MonsterType::Champion)
-		text_color = L'\x33';
+		name_color = g_text_colors.at(L'\x33');
 	else
-		text_color = getColor(m_hovered_unit.color);
+		name_color = g_text_colors.at(getColor(m_hovered_unit.color));
 	if (hp == 0)
-		text_color = L'\x31';
+		name_color = g_text_colors.at(L'\x31');
 
-	glm::vec2 text_pos = { center - text_size.x / 2, bar_pos.y + 15.8f };
-	font->drawText(name, text_pos, g_text_colors.at(text_color));
+	const auto shown_size = font->getTextSize(shown_name);
+	glm::vec2 text_pos = { center - shown_size.x / 2, bar_pos.y + 15.8f };
+	font->setShadow(0);
+	for (const glm::vec2 offset : { glm::vec2{ -1.0f, 0.0f }, glm::vec2{ 1.0f, 0.0f }, glm::vec2{ 0.0f, -1.0f }, glm::vec2{ 0.0f, 1.0f } })
+		font->drawText(shown_name, text_pos + offset, 0x000000FF);
+	font->setShadow(2);
+	font->drawText(shown_name, text_pos, name_color);
 	m_hovered_unit.color = 0;
 
 	if (App.show_monster_res && !App.is_d2expres) {
