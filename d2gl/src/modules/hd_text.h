@@ -38,6 +38,15 @@ struct HoveredUnit {
 	uint32_t color = 0;
 };
 
+// the monster health bar of the hovered monster: its life one frame ago and the damage trail behind it (fractions)
+struct MonsterLifeBar {
+	uint32_t unit_id = 0;
+	float last_hp = 0.0f;
+	float trail = 0.0f;
+	uint64_t hit_time = 0;
+	uint64_t frame_time = 0;
+};
+
 class HDText {
 	std::map<uint8_t, std::unique_ptr<Font>> m_fonts;
 	std::unique_ptr<Object> m_object_bg;
@@ -61,6 +70,7 @@ class HDText {
 	int m_cur_level_no = 0;
 
 	HoveredUnit m_hovered_unit;
+	MonsterLifeBar m_bar;
 
 	// texts drawn in this frame: mods draw some of them many times a frame (Reign of Shadow's character screen)
 	std::unordered_map<uint64_t, bool> m_drawn_texts;
